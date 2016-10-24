@@ -265,6 +265,8 @@ set(LOVE_SRC_COMMON
 	src/common/EnumMap.h
 	src/common/Exception.cpp
 	src/common/Exception.h
+	src/common/halffloat.cpp
+	src/common/halffloat.h
 	src/common/int.h
 	src/common/math.h
 	src/common/Matrix.cpp
@@ -550,6 +552,8 @@ set(LOVE_SRC_MODULE_IMAGE_MAGPIE
 	src/modules/image/magpie/CompressedFormatHandler.h
 	src/modules/image/magpie/ddsHandler.cpp
 	src/modules/image/magpie/ddsHandler.h
+	src/modules/image/magpie/EXRHandler.cpp
+	src/modules/image/magpie/EXRHandler.h
 	src/modules/image/magpie/FormatHandler.cpp
 	src/modules/image/magpie/FormatHandler.h
 	src/modules/image/magpie/Image.cpp
@@ -640,6 +644,8 @@ set(LOVE_SRC_MODULE_MATH
 	src/modules/math/CompressedData.h
 	src/modules/math/Compressor.cpp
 	src/modules/math/Compressor.h
+	src/modules/math/HashFunction.cpp
+	src/modules/math/HashFunction.h
 	src/modules/math/MathModule.cpp
 	src/modules/math/MathModule.h
 	src/modules/math/RandomGenerator.cpp
@@ -812,6 +818,7 @@ source_group("modules\\physics\\box2d" FILES ${LOVE_SRC_MODULE_PHYSICS_BOX2D})
 #
 
 set(LOVE_SRC_MODULE_SOUND_ROOT
+	src/modules/sound/Decoder.cpp
 	src/modules/sound/Decoder.h
 	src/modules/sound/Sound.cpp
 	src/modules/sound/Sound.h
@@ -826,8 +833,6 @@ set(LOVE_SRC_MODULE_SOUND_ROOT
 )
 
 set(LOVE_SRC_MODULE_SOUND_LULLABY
-	src/modules/sound/lullaby/Decoder.cpp
-	src/modules/sound/lullaby/Decoder.h
 	src/modules/sound/lullaby/FLACDecoder.cpp
 	src/modules/sound/lullaby/FLACDecoder.h
 	src/modules/sound/lullaby/GmeDecoder.cpp
@@ -1350,6 +1355,16 @@ set(LOVE_SRC_3P_STB
 )
 
 # stb_image has no implementation files of its own.
+
+#
+# tiny exr
+#
+
+set(LOVE_SRC_3P_TINEXR
+	src/libraries/tinyexr/tinyexr.h
+)
+
+# tinyexr has no implementation files of its own.
 
 #
 # utf8

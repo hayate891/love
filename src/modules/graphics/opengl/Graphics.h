@@ -331,37 +331,14 @@ public:
 	bool isWireframe() const;
 
 	/**
-	 * Draws text at the specified coordinates, with rotation and
-	 * scaling along both axes.
-	 * @param x The x-coordinate.
-	 * @param y The y-coordinate.
-	 * @param angle The amount of rotation.
-	 * @param sx The scale factor along the x-axis. (1 = normal).
-	 * @param sy The scale factor along the y-axis. (1 = normal).
-	 * @param ox The origin offset along the x-axis.
-	 * @param oy The origin offset along the y-axis.
-	 * @param kx Shear along the x-axis.
-	 * @param ky Shear along the y-axis.
+	 * Draws text at the specified coordinates
 	 **/
-	void print(const std::vector<Font::ColoredString> &str, float x, float y, float angle, float sx, float sy, float ox, float oy, float kx, float ky);
+	void print(const std::vector<Font::ColoredString> &str, const Matrix4 &m);
 
 	/**
-	 * Draw formatted text on screen at the specified coordinates.
-	 *
-	 * @param str A string of text.
-	 * @param x The x-coordinate.
-	 * @param y The y-coordinate.
-	 * @param wrap The maximum width of the text area.
-	 * @param align Where to align the text.
-	 * @param angle The amount of rotation.
-	 * @param sx The scale factor along the x-axis. (1 = normal).
-	 * @param sy The scale factor along the y-axis. (1 = normal).
-	 * @param ox The origin offset along the x-axis.
-	 * @param oy The origin offset along the y-axis.
-	 * @param kx Shear along the x-axis.
-	 * @param ky Shear along the y-axis.
+	 * Draws formatted text on screen at the specified coordinates.
 	 **/
-	void printf(const std::vector<Font::ColoredString> &str, float x, float y, float wrap, Font::AlignMode align, float angle, float sx, float sy, float ox, float oy, float kx, float ky);
+	void printf(const std::vector<Font::ColoredString> &str, float wrap, Font::AlignMode align, const Matrix4 &m);
 
 	/**
 	 * Draws a point at (x,y).
@@ -397,7 +374,8 @@ public:
 	 * @param ry The radius of the corners on the y axis
 	 * @param points The number of points to use per corner
 	 **/
-	void rectangle(DrawMode mode, float x, float y, float w, float h, float rx, float ry, int points = 10);
+	void rectangle(DrawMode mode, float x, float y, float w, float h, float rx, float ry, int points);
+	void rectangle(DrawMode mode, float x, float y, float w, float h, float rx, float ry);
 
 	/**
 	 * Draws a circle using the specified arguments.
@@ -407,7 +385,8 @@ public:
 	 * @param radius Radius of the circle.
 	 * @param points Number of points to use to draw the circle.
 	 **/
-	void circle(DrawMode mode, float x, float y, float radius, int points = 10);
+	void circle(DrawMode mode, float x, float y, float radius, int points);
+	void circle(DrawMode mode, float x, float y, float radius);
 
 	/**
 	 * Draws an ellipse using the specified arguments.
@@ -418,7 +397,8 @@ public:
 	 * @param b Radius in y-direction
 	 * @param points Number of points to use to draw the circle.
 	 **/
-	void ellipse(DrawMode mode, float x, float y, float a, float b, int points = 10);
+	void ellipse(DrawMode mode, float x, float y, float a, float b, int points);
+	void ellipse(DrawMode mode, float x, float y, float a, float b);
 
 	/**
 	 * Draws an arc using the specified arguments.
@@ -431,7 +411,8 @@ public:
 	 * @param angle2 The angle at which the arc terminates.
 	 * @param points Number of points to use to draw the arc.
 	 **/
-	void arc(DrawMode drawmode, ArcMode arcmode, float x, float y, float radius, float angle1, float angle2, int points = 10);
+	void arc(DrawMode drawmode, ArcMode arcmode, float x, float y, float radius, float angle1, float angle2, int points);
+	void arc(DrawMode drawmode, ArcMode arcmode, float x, float y, float radius, float angle1, float angle2);
 
 	/**
 	 * Draws a polygon with an arbitrary number of vertices.
@@ -444,7 +425,7 @@ public:
 	/**
 	 * Creates a screenshot of the view and saves it to the default folder.
 	 * @param image The love.image module.
-	 * @param copyAlpha If the alpha channel should be copied or set to full opacity (255).
+	 * @param copyAlpha If the alpha channel should be copied or set to full opacity (1.0).
 	 **/
 	love::image::ImageData *newScreenshot(love::image::Image *image, bool copyAlpha = true);
 
@@ -478,13 +459,15 @@ public:
 	void translate(float x, float y);
 	void shear(float kx, float ky);
 	void origin();
+	Vector transformPoint(Vector point);
+	Vector inverseTransformPoint(Vector point);
 
 private:
 
 	struct DisplayState
 	{
-		Colorf color = Colorf(255.0, 255.0, 255.0, 255.0);
-		Colorf backgroundColor = Colorf(0.0, 0.0, 0.0, 255.0);
+		Colorf color = Colorf(1.0, 1.0, 1.0, 1.0);
+		Colorf backgroundColor = Colorf(0.0, 0.0, 0.0, 1.0);
 
 		BlendMode blendMode = BLEND_ALPHA;
 		BlendAlpha blendAlphaMode = BLENDALPHA_MULTIPLY;
@@ -521,6 +504,8 @@ private:
 	void restoreStateChecked(const DisplayState &s);
 
 	void checkSetDefaultFont();
+
+	int calculateEllipsePoints(float rx, float ry) const;
 
 	StrongRef<love::window::Window> currentWindow;
 
