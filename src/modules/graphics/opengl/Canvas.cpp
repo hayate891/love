@@ -217,7 +217,7 @@ bool Canvas::loadVolatile()
 	requested_samples = std::max(requested_samples, 0);
 
 	glGenTextures(1, &texture);
-	gl.bindTexture(texture);
+	gl.bindTextureToUnit(texture, 0, false);
 
 	if (GLAD_ANGLE_texture_usage)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_USAGE_ANGLE, GL_FRAMEBUFFER_ATTACHMENT_ANGLE);
@@ -311,10 +311,11 @@ void Canvas::drawv(const Matrix4 &t, const Vertex *v)
 	OpenGL::TempTransform transform(gl);
 	transform.get() *= t;
 
-	gl.bindTexture(texture);
+	gl.bindTextureToUnit(texture, 0, false);
 
 	gl.useVertexAttribArrays(ATTRIBFLAG_POS | ATTRIBFLAG_TEXCOORD);
 
+	gl.bindBuffer(BUFFER_VERTEX, 0);
 	glVertexAttribPointer(ATTRIB_POS, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), &v[0].x);
 	glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), &v[0].s);
 
@@ -322,18 +323,14 @@ void Canvas::drawv(const Matrix4 &t, const Vertex *v)
 	gl.drawArrays(GL_TRIANGLE_STRIP, 0, 4);
 }
 
-void Canvas::draw(float x, float y, float angle, float sx, float sy, float ox, float oy, float kx, float ky)
+void Canvas::draw(const Matrix4 &m)
 {
-	Matrix4 t(x, y, angle, sx, sy, ox, oy, kx, ky);
-
-	drawv(t, vertices);
+	drawv(m, vertices);
 }
 
-void Canvas::drawq(Quad *quad, float x, float y, float angle, float sx, float sy, float ox, float oy, float kx, float ky)
+void Canvas::drawq(Quad *quad, const Matrix4 &m)
 {
-	Matrix4 t(x, y, angle, sx, sy, ox, oy, kx, ky);
-
-	drawv(t, quad->getVertices());
+	drawv(m, quad->getVertices());
 }
 
 void Canvas::setFilter(const Texture::Filter &f)
@@ -342,7 +339,7 @@ void Canvas::setFilter(const Texture::Filter &f)
 		throw love::Exception("Invalid texture filter.");
 
 	filter = f;
-	gl.bindTexture(texture);
+	gl.bindTextureToUnit(texture, 0, false);
 	gl.setTextureFilter(filter);
 }
 
@@ -369,7 +366,7 @@ bool Canvas::setWrap(const Texture::Wrap &w)
 			wrap.t = WRAP_CLAMP;
 	}
 
-	gl.bindTexture(texture);
+	gl.bindTextureToUnit(texture, 0, false);
 	gl.setTextureWrap(wrap);
 
 	return success;
@@ -607,12 +604,37 @@ love::image::ImageData *Canvas::newImageData(love::image::Image *image, int x, i
 	if (x < 0 || y < 0 || w <= 0 || h <= 0 || (x + w) > width || (y + h) > height)
 		throw love::Exception("Invalid ImageData rectangle dimensions.");
 
-	int row = 4 * w;
-	int size = row * h;
-	GLubyte *pixels = nullptr;
+	GLenum datatype = GL_UNSIGNED_BYTE;
+	image::ImageData::Format imageformat = image::ImageData::FORMAT_RGBA8;
+
+	switch (getSizedFormat(format))
+	{
+	case FORMAT_RGB10A2: // FIXME: Conversions aren't supported in GLES
+		datatype = GL_UNSIGNED_SHORT;
+		imageformat = image::ImageData::FORMAT_RGBA16;
+		break;
+	case FORMAT_R16F:
+	case FORMAT_RG16F:
+	case FORMAT_RGBA16F:
+	case FORMAT_RG11B10F: // FIXME: Conversions aren't supported in GLES
+		datatype = GL_HALF_FLOAT;
+		imageformat = image::ImageData::FORMAT_RGBA16F;
+		break;
+	case FORMAT_R32F:
+	case FORMAT_RG32F:
+	case FORMAT_RGBA32F:
+		datatype = GL_FLOAT;
+		imageformat = image::ImageData::FORMAT_RGBA32F;
+		break;
+	default:
+		break;
+	}
+
+	size_t size = w * h * image::ImageData::getPixelSize(imageformat);
+	uint8 *pixels = nullptr;
 	try
 	{
-		pixels = new GLubyte[size];
+		pixels = new uint8[size];
 	}
 	catch (std::bad_alloc &)
 	{
@@ -629,13 +651,13 @@ love::image::ImageData *Canvas::newImageData(love::image::Image *image, int x, i
 	else
 		gl.bindFramebuffer(GL_FRAMEBUFFER, fbo);
 
-	glReadPixels(x, y, w, h, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
+	glReadPixels(x, y, w, h, GL_RGBA, datatype, pixels);
 
 	GLuint prevfbo = current ? current->fbo : gl.getDefaultFBO();
 	gl.bindFramebuffer(GL_FRAMEBUFFER, prevfbo);
 
 	// The new ImageData now owns the pixel data, so we don't delete it here.
-	return image->newImageData(w, h, pixels, true);
+	return image->newImageData(w, h, imageformat, pixels, true);
 }
 
 bool Canvas::resolveMSAA(bool restoreprev)
@@ -914,7 +936,7 @@ bool Canvas::isFormatSupported(Canvas::Format format)
 
 	GLuint texture = 0;
 	glGenTextures(1, &texture);
-	gl.bindTexture(texture);
+	gl.bindTextureToUnit(texture, 0, false);
 
 	Texture::Filter f;
 	f.min = f.mag = Texture::FILTER_NEAREST;
